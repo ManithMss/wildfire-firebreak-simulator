@@ -64,7 +64,15 @@ The simulation uses next-state cellular-automaton updates: at each discrete time
 
 ![Verification plot](figures/verification.png)
 
-## 6. Concepts applied
+## 6. Extensions
+
+Three extensions beyond the core model are implemented in the notebook (Section 6):
+
+- **Rigorous verification (independent error-scaling check):** the Monte Carlo containment-probability estimate was repeated many times at several replication counts N (10 to 160), and the spread of the repeated estimates was fitted against N on a log-log plot. The fitted slope was -0.47, consistent with the expected -0.5 exponent for a correctly behaving Monte Carlo estimator, independently confirming the estimator in Section 3.5 behaves as intended.
+- **Stretch extension (spatially varying vegetation density):** the uniform base ignition probability was replaced with a spatially varying field (a smoothly upsampled random patch grid), so some regions of the forest are more or less flammable than others, while the firebreak itself remains unaffected. At a fixed firebreak width and wind setting, patchy vegetation density gave a measurably different containment probability (0.380 +/- 0.095) compared with uniform density (0.270 +/- 0.087), showing that fuel heterogeneity is not a negligible factor.
+- **Sensitivity and uncertainty analysis:** containment probability and its 95% confidence interval were computed over a full grid of firebreak width (0 to 4) and wind strength (0.0 to 0.9) combinations, visualised as two heatmaps. As expected from the statistics of a Bernoulli proportion, the confidence interval is widest near the transition region where containment probability is close to 0.5, and narrowest where the outcome is close to certain (0 or 1) in either direction.
+
+## 7. Concepts applied
 
 | Concept | Where it is used in this project |
 |---|---|
@@ -72,6 +80,6 @@ The simulation uses next-state cellular-automaton updates: at each discrete time
 | Input modelling and random variate generation | Seeded uniform random draws used for ignition decisions and ember-spotting events |
 | Monte Carlo integration and the law of large numbers | Estimating containment probability and its 95% confidence interval from repeated independent stochastic replications |
 
-## 7. References
+## 8. References
 
 See [REFERENCES.md](REFERENCES.md).
