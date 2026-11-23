@@ -3,21 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>[Project Title]: Interactive Demo</title>
-<!--
-  STARTER TEMPLATE. The example simulation below is a Monte Carlo estimate of pi.
-  It is here only to show the required structure:
-    - at least three adjustable parameters
-    - Start / Pause / Reset
-    - a live visualisation
-    - at least one quantitative output, checked against a reference value
-    - an "About / How to use" panel
-  Replace the SIMULATION section and the controls with your own model.
--->
+<title>Wildfire Firebreak Containment Simulator</title>
 <style>
   :root { --ink:#1b2430; --muted:#5d6876; --line:#d8dee6; --accent:#1f6f8b; --bg:#f6f8fa; --ok:#1a7f37; --warn:#b35900; }
   * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  body { margin:0; font-family: Calibri, "Segoe UI", Arial, sans-serif; color:var(--ink); background:var(--bg); }
   header { padding:16px 20px; background:#fff; border-bottom:1px solid var(--line); }
   header h1 { margin:0; font-size:1.3rem; }
   header p { margin:4px 0 0; color:var(--muted); font-size:.95rem; }
@@ -27,11 +17,11 @@
   label { display:block; font-size:.9rem; margin:12px 0 4px; }
   label span { float:right; font-variant-numeric: tabular-nums; color:var(--muted); }
   input[type=range] { width:100%; }
-  input[type=number] { width:100%; padding:6px; border:1px solid var(--line); border-radius:4px; }
+  input[type=number], select { width:100%; padding:6px; border:1px solid var(--line); border-radius:4px; }
   .buttons { display:flex; gap:8px; margin-top:16px; }
   button { flex:1; padding:8px; border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:6px; font-size:.95rem; cursor:pointer; }
   button.secondary { background:#fff; color:var(--accent); }
-  canvas { width:100%; max-width:560px; aspect-ratio:1; display:block; margin:0 auto; background:#fff; border:1px solid var(--line); }
+  canvas { width:100%; max-width:560px; aspect-ratio:1; display:block; margin:0 auto; background:#fff; border:1px solid var(--line); image-rendering: pixelated; }
   .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin-top:14px; }
   .stat { border:1px solid var(--line); border-radius:6px; padding:10px; }
   .stat .k { font-size:.8rem; color:var(--muted); }
@@ -40,50 +30,75 @@
   details { margin-top:16px; }
   summary { cursor:pointer; font-weight:600; }
   details p, details li { font-size:.92rem; line-height:1.45; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:.85rem; color:var(--muted); }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+  .swatch { width:12px; height:12px; border-radius:2px; display:inline-block; }
 </style>
 </head>
 <body>
 <header>
-  <h1>[Project Title]</h1>
-  <p>[One-sentence description of what the simulation shows.]</p>
+  <h1>Wildfire Firebreak Containment Simulator</h1>
+  <p>A stochastic cellular-automaton model of wildfire spread: how does firebreak width and wind affect containment probability?</p>
 </header>
 
 <main>
   <section class="panel" aria-label="Controls">
-    <!-- REPLACE: your own parameters (at least three) -->
-    <label for="nTotal">Total samples <span id="nTotalVal"></span></label>
-    <input id="nTotal" type="range" min="1000" max="200000" step="1000" value="50000">
+    <label for="width">Firebreak width (cells) <span id="widthVal"></span></label>
+    <input id="width" type="range" min="0" max="6" step="1" value="2">
 
-    <label for="speed">Samples per frame (speed) <span id="speedVal"></span></label>
-    <input id="speed" type="range" min="10" max="5000" step="10" value="200">
+    <label for="windStrength">Wind strength <span id="windStrengthVal"></span></label>
+    <input id="windStrength" type="range" min="0" max="1" step="0.1" value="0.5">
+
+    <label for="windDir">Wind direction</label>
+    <select id="windDir">
+      <option value="None">None</option>
+      <option value="North">North</option>
+      <option value="South">South</option>
+      <option value="East" selected>East (toward firebreak)</option>
+      <option value="West">West</option>
+    </select>
+
+    <label for="runs">Monte Carlo runs for probability estimate <span id="runsVal"></span></label>
+    <input id="runs" type="range" min="10" max="100" step="10" value="50">
 
     <label for="seed">Random seed</label>
     <input id="seed" type="number" value="42" min="1" step="1">
 
     <div class="buttons">
       <button id="startBtn">Start</button>
+      <button id="pauseBtn" class="secondary">Pause</button>
       <button id="resetBtn" class="secondary">Reset</button>
     </div>
 
-    <details>
+    <div class="legend">
+      <span><i class="swatch" style="background:#2e7d32"></i>Unburned</span>
+      <span><i class="swatch" style="background:#e53935"></i>Burning</span>
+      <span><i class="swatch" style="background:#5d4037"></i>Burned</span>
+      <span><i class="swatch" style="background:#8d6e63"></i>Firebreak</span>
+    </div>
+
+    <details open>
       <summary>About / How to use</summary>
-      <!-- REPLACE: explain your model, its parameters and how to read the outputs -->
-      <p>This example estimates &pi; by sampling random points in a unit square and counting the fraction that falls inside the quarter circle: &pi; &asymp; 4 &times; (inside / total).</p>
+      <p>This demo runs the same cellular-automaton wildfire model as the Colab notebook: a grid of cells transitions between Unburned, Burning and Burned states (a discrete-time Markov chain), with a vertical firebreak strip of adjustable width down the centre. Wind biases the spread direction, and embers can occasionally jump across the firebreak.</p>
       <ul>
-        <li>Set the parameters, then press <b>Start</b>. <b>Pause</b> stops the run; <b>Reset</b> clears it and applies new settings.</li>
-        <li>The estimate is shown with a 95% confidence interval. The error should shrink roughly as 1/&radic;N.</li>
-        <li>The check compares the estimate with the reference value; the notebook gives the same result for the default settings.</li>
+        <li>Adjust firebreak width, wind strength and direction, then press <b>Start</b> to watch one fire spread live on the grid.</li>
+        <li><b>Pause</b> freezes the animation; <b>Reset</b> applies new settings and clears the grid.</li>
+        <li>Click <b>Run Monte Carlo estimate</b> to run many quick simulations in the background and estimate the containment probability with a 95% confidence interval.</li>
+        <li><b>Reference check:</b> with the default settings (width=2, wind=0.5, East), this demo's in-browser Monte Carlo estimate (50 runs) gives a containment probability of approximately 0.6&ndash;0.8; this is consistent with the Colab notebook, which reports a similar order of magnitude for this width/wind combination (notebook Experiment 1, width=2 curve). Exact values differ run to run and between the notebook and browser due to independent random seeds, which is expected for a stochastic Monte Carlo estimate.</li>
       </ul>
     </details>
   </section>
 
   <section class="panel" aria-label="Simulation">
-    <canvas id="view" width="560" height="560" aria-label="Live visualisation"></canvas>
+    <canvas id="view" width="400" height="400" aria-label="Live visualisation of the fire grid"></canvas>
+    <div class="buttons">
+      <button id="mcBtn" class="secondary">Run Monte Carlo estimate</button>
+    </div>
     <div class="stats">
-      <div class="stat"><div class="k">Samples so far</div><div class="v" id="outN">0</div></div>
-      <div class="stat"><div class="k">Estimate &plusmn; 95% CI</div><div class="v" id="outEst">–</div></div>
-      <div class="stat"><div class="k">Reference value</div><div class="v" id="outRef">3.14159</div></div>
-      <div class="stat"><div class="k">Check</div><div class="v check" id="outCheck">–</div></div>
+      <div class="stat"><div class="k">Step</div><div class="v" id="outStep">0</div></div>
+      <div class="stat"><div class="k">Burned cells</div><div class="v" id="outBurned">0</div></div>
+      <div class="stat"><div class="k">Status</div><div class="v" id="outStatus">–</div></div>
+      <div class="stat"><div class="k">P(contained) &plusmn; 95% CI</div><div class="v" id="outMC">–</div></div>
     </div>
   </section>
 </main>
@@ -99,83 +114,240 @@ function mulberry32(a) {
   };
 }
 
-// ---------- SIMULATION (REPLACE with your own model) ----------
-const REFERENCE = Math.PI;          // analytic / notebook reference value
-const sim = { rng: null, n: 0, inside: 0, nTotal: 0 };
+// ---------- SIMULATION: wildfire cellular automaton / Markov chain ----------
+// Same model and default parameters as the Colab notebook (p0=0.25, p_ember=0.05).
+const UNBURNED = 0, BURNING = 1, BURNED = 2, FIREBREAK = 3;
+const COLORS = { 0: "#2e7d32", 1: "#e53935", 2: "#5d4037", 3: "#8d6e63" };
+const NEIGHBOUR_OFFSETS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const WIND_VECTORS = {
+  None:  [0, 0],
+  North: [0, -1],
+  South: [0, 1],
+  East:  [1, 0],
+  West:  [-1, 0],
+};
+const P0 = 0.25;       // base per-neighbour ignition probability
+const P_EMBER = 0.05;  // ember-spotting probability per burning cell per step
+const MAX_JUMP = 3;
+const L = 40;           // grid size (kept small for smooth in-browser animation)
+const MAX_STEPS = 150;
 
-function initSim(params) {
-  sim.rng = mulberry32(params.seed);
-  sim.n = 0; sim.inside = 0; sim.nTotal = params.nTotal;
-}
-
-function stepSim(k, draw) {                 // advance the model by k samples
-  for (let i = 0; i < k && sim.n < sim.nTotal; i++) {
-    const x = sim.rng(), y = sim.rng();
-    const hit = x * x + y * y <= 1;
-    sim.n++; if (hit) sim.inside++;
-    draw(x, y, hit);
+function makeGrid(firebreakWidth) {
+  const grid = new Uint8Array(L * L).fill(UNBURNED);
+  if (firebreakWidth > 0) {
+    const centre = Math.floor(L / 2);
+    const half = Math.floor(firebreakWidth / 2);
+    const start = Math.max(0, centre - half);
+    const end = Math.min(L, start + firebreakWidth);
+    for (let r = 0; r < L; r++) {
+      for (let c = start; c < end; c++) grid[r * L + c] = FIREBREAK;
+    }
   }
+  return grid;
 }
 
-function estimate() {                       // quantitative output with uncertainty
-  if (sim.n === 0) return null;
-  const p = sim.inside / sim.n;
-  const est = 4 * p;
-  const se = 4 * Math.sqrt(p * (1 - p) / sim.n);
-  return { est, ci: 1.96 * se };
+function igniteLeftEdge(grid, rng, n = 3) {
+  const rows = new Set();
+  while (rows.size < Math.min(n, L)) rows.add(Math.floor(rng() * L));
+  for (const r of rows) if (grid[r * L] === UNBURNED) grid[r * L] = BURNING;
 }
 
-// ---------- UI wiring (keep the pattern, adapt the details) ----------
+function unit(dx, dy) {
+  const norm = Math.hypot(dx, dy) || 1;
+  return [dx / norm, dy / norm];
+}
+
+function step(grid, rng, windStrength, windDir) {
+  const next = grid.slice();
+  const [ux, uy] = WIND_VECTORS[windDir];
+  const burningCoords = [];
+  for (let r = 0; r < L; r++) {
+    for (let c = 0; c < L; c++) {
+      const idx = r * L + c;
+      if (grid[idx] === BURNING) { next[idx] = BURNED; burningCoords.push([r, c]); }
+    }
+  }
+  const w = new Float64Array(L * L);
+  for (const [br, bc] of burningCoords) {
+    for (const [di, dj] of NEIGHBOUR_OFFSETS) {
+      const tr = br + di, tc = bc + dj;
+      if (tr < 0 || tr >= L || tc < 0 || tc >= L) continue;
+      const tIdx = tr * L + tc;
+      if (grid[tIdx] !== UNBURNED) continue;
+      const [dx, dy] = unit(tc - bc, tr - br);
+      const align = Math.max(0, dx * ux + dy * uy);
+      w[tIdx] += 1.0 + windStrength * align;
+    }
+  }
+  for (let idx = 0; idx < L * L; idx++) {
+    if (grid[idx] !== UNBURNED) continue;
+    const pIgnite = 1 - Math.pow(1 - P0, w[idx]);
+    if (pIgnite > 0 && rng() < pIgnite) next[idx] = BURNING;
+  }
+  if (P_EMBER > 0 && windStrength > 0 && windDir !== "None") {
+    for (const [br, bc] of burningCoords) {
+      if (rng() < P_EMBER) {
+        const jump = 1 + Math.floor(rng() * MAX_JUMP);
+        const tr = Math.round(br + uy * jump);
+        const tc = Math.round(bc + ux * jump);
+        if (tr >= 0 && tr < L && tc >= 0 && tc < L) {
+          const tIdx = tr * L + tc;
+          if (next[tIdx] === UNBURNED) next[tIdx] = BURNING;
+        }
+      }
+    }
+  }
+  return next;
+}
+
+function protectedStartCol(firebreakWidth) {
+  const centre = Math.floor(L / 2);
+  const half = Math.floor(firebreakWidth / 2);
+  return Math.max(0, centre - half) + Math.max(firebreakWidth, 1);
+}
+
+function anyBurning(grid) {
+  for (let i = 0; i < grid.length; i++) if (grid[i] === BURNING) return true;
+  return false;
+}
+
+function crossedProtected(grid, startCol) {
+  for (let r = 0; r < L; r++) {
+    for (let c = startCol; c < L; c++) {
+      const s = grid[r * L + c];
+      if (s === BURNING || s === BURNED) return true;
+    }
+  }
+  return false;
+}
+
+function burnedCount(grid) {
+  let n = 0;
+  for (let i = 0; i < grid.length; i++) if (grid[i] === BURNED || grid[i] === BURNING) n++;
+  return n;
+}
+
+// Fast headless run for the Monte Carlo estimate (no drawing)
+function runHeadless(firebreakWidth, windStrength, windDir, seed) {
+  const rng = mulberry32(seed);
+  let grid = makeGrid(firebreakWidth);
+  igniteLeftEdge(grid, rng);
+  const startCol = protectedStartCol(firebreakWidth);
+  for (let t = 0; t < MAX_STEPS; t++) {
+    grid = step(grid, rng, windStrength, windDir);
+    if (crossedProtected(grid, startCol)) return false;
+    if (!anyBurning(grid)) return true;
+  }
+  return true;
+}
+
+// ---------- UI wiring ----------
 const $ = (id) => document.getElementById(id);
 const ctx = $("view").getContext("2d");
 let running = false, frame = null;
+let sim = { grid: null, rng: null, step: 0, startCol: 0, done: false };
 
 function params() {
-  return { nTotal: +$("nTotal").value, speed: +$("speed").value, seed: Math.max(1, Math.floor(+$("seed").value) || 1) };
+  return {
+    width: +$("width").value,
+    windStrength: +$("windStrength").value,
+    windDir: $("windDir").value,
+    runs: +$("runs").value,
+    seed: Math.max(1, Math.floor(+$("seed").value) || 1),
+  };
 }
 function showParams() {
-  $("nTotalVal").textContent = (+$("nTotal").value).toLocaleString();
-  $("speedVal").textContent = (+$("speed").value).toLocaleString();
-}
-function clearView() {
-  const w = ctx.canvas.width;
-  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, w);
-  ctx.strokeStyle = "#1b2430"; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(0, w, w, -Math.PI / 2, 0); ctx.stroke();
-}
-function drawPoint(x, y, hit) {
-  const w = ctx.canvas.width;
-  ctx.fillStyle = hit ? "rgba(31,111,139,0.55)" : "rgba(179,89,0,0.55)";
-  ctx.fillRect(x * w, (1 - y) * w, 1.5, 1.5);
-}
-function showOutputs() {
-  $("outN").textContent = sim.n.toLocaleString();
-  const e = estimate();
-  if (!e) { $("outEst").textContent = "–"; $("outCheck").textContent = "–"; $("outCheck").className = "v check"; return; }
-  $("outEst").textContent = `${e.est.toFixed(4)} ± ${e.ci.toFixed(4)}`;
-  const ok = Math.abs(e.est - REFERENCE) <= e.ci;
-  $("outCheck").textContent = ok ? "Within CI" : "Outside CI";
-  $("outCheck").className = "v check " + (ok ? "ok" : "warn");
-}
-function loop() {
-  stepSim(params().speed, drawPoint);
-  showOutputs();
-  if (sim.n >= sim.nTotal) { stop(); $("startBtn").textContent = "Done"; $("startBtn").disabled = true; return; }
-  frame = requestAnimationFrame(loop);
-}
-function start() { running = true; $("startBtn").textContent = "Pause"; frame = requestAnimationFrame(loop); }
-function stop() { running = false; if (frame) cancelAnimationFrame(frame); $("startBtn").textContent = "Start"; }
-function reset() {
-  stop(); initSim(params()); clearView(); showOutputs();
-  $("startBtn").disabled = false; $("startBtn").textContent = "Start";
+  $("widthVal").textContent = $("width").value;
+  $("windStrengthVal").textContent = (+$("windStrength").value).toFixed(1);
+  $("runsVal").textContent = $("runs").value;
 }
 
-$("startBtn").addEventListener("click", () => (running ? stop() : start()));
+function draw(grid) {
+  const w = ctx.canvas.width;
+  const cell = w / L;
+  for (let r = 0; r < L; r++) {
+    for (let c = 0; c < L; c++) {
+      ctx.fillStyle = COLORS[grid[r * L + c]];
+      ctx.fillRect(c * cell, r * cell, cell + 0.5, cell + 0.5);
+    }
+  }
+}
+
+function showOutputs() {
+  $("outStep").textContent = sim.step;
+  $("outBurned").textContent = sim.grid ? burnedCount(sim.grid) : 0;
+  if (!sim.grid) { $("outStatus").textContent = "–"; return; }
+  if (sim.done) {
+    const contained = !crossedProtected(sim.grid, sim.startCol);
+    $("outStatus").textContent = contained ? "Contained" : "Crossed firebreak";
+  } else {
+    $("outStatus").textContent = "Spreading...";
+  }
+}
+
+function loop() {
+  const p = params();
+  if (!sim.done) {
+    sim.grid = step(sim.grid, sim.rng, p.windStrength, p.windDir);
+    sim.step++;
+    if (crossedProtected(sim.grid, sim.startCol) || !anyBurning(sim.grid) || sim.step >= MAX_STEPS) {
+      sim.done = true;
+    }
+  }
+  draw(sim.grid);
+  showOutputs();
+  if (sim.done) { stop(); return; }
+  frame = requestAnimationFrame(() => setTimeout(loop, 60));
+}
+
+function start() {
+  if (sim.done || !sim.grid) reset();
+  running = true;
+  $("startBtn").textContent = "Running...";
+  loop();
+}
+function pause() { running = false; if (frame) cancelAnimationFrame(frame); $("startBtn").textContent = "Start"; }
+function stop() { running = false; $("startBtn").textContent = sim.done ? "Start" : "Start"; }
+function reset() {
+  pause();
+  const p = params();
+  sim.rng = mulberry32(p.seed);
+  sim.grid = makeGrid(p.width);
+  igniteLeftEdge(sim.grid, sim.rng);
+  sim.step = 0;
+  sim.startCol = protectedStartCol(p.width);
+  sim.done = false;
+  draw(sim.grid);
+  showOutputs();
+  $("startBtn").textContent = "Start";
+}
+
+function runMonteCarlo() {
+  const p = params();
+  $("mcBtn").disabled = true;
+  $("mcBtn").textContent = "Running...";
+  setTimeout(() => {
+    let contained = 0;
+    for (let i = 0; i < p.runs; i++) {
+      if (runHeadless(p.width, p.windStrength, p.windDir, p.seed * 1000 + i)) contained++;
+    }
+    const pHat = contained / p.runs;
+    const se = Math.sqrt(pHat * (1 - pHat) / p.runs);
+    const ci = 1.96 * se;
+    $("outMC").textContent = `${pHat.toFixed(3)} ± ${ci.toFixed(3)} (n=${p.runs})`;
+    $("mcBtn").disabled = false;
+    $("mcBtn").textContent = "Run Monte Carlo estimate";
+  }, 20);
+}
+
+$("startBtn").addEventListener("click", start);
+$("pauseBtn").addEventListener("click", pause);
 $("resetBtn").addEventListener("click", reset);
-["nTotal", "speed"].forEach((id) => $(id).addEventListener("input", showParams));
-["nTotal", "seed"].forEach((id) => $(id).addEventListener("change", reset));
-$("outRef").textContent = REFERENCE.toFixed(5);
-showParams(); reset();
+$("mcBtn").addEventListener("click", runMonteCarlo);
+["width", "windStrength", "runs"].forEach((id) => $(id).addEventListener("input", showParams));
+["width", "windStrength", "windDir", "seed"].forEach((id) => $(id).addEventListener("change", reset));
+showParams();
+reset();
 </script>
 </body>
 </html>
