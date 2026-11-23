@@ -1,7 +1,3 @@
 # Data
 
-| File | Description | Source (with link) | Licence | Date accessed |
-|---|---|---|---|---|
-| [file.csv] | [what it contains] | [where it came from] | [e.g. CC BY 4.0] | [YYYY-MM-DD] |
-
-Keep files small (a few MB at most). If you collected the data yourself (e.g. arrival counts), describe how, and record counts as aggregates only: no personal data.
+This project does not use any external dataset. All model parameters (base ignition probability, ember-spotting probability, wind strength and direction, firebreak width, grid size) are synthetic and assumed, chosen to produce a realistic range of containment outcomes rather than taken from a measured source. These assumptions are documented in [THEORY.md](../THEORY.md).
