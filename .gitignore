@@ -5,3 +5,15 @@ __pycache__/
 Thumbs.db
 .env
 *.key
+
+# editor and OS noise
+.vscode/
+.idea/
+*.swp
+
+# local virtual environments
+venv/
+.venv/
+
+# node tooling leftovers if any JS tooling is run locally
+node_modules/

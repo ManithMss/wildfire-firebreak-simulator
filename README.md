@@ -1,6 +1,6 @@
 # Wildfire Firebreak Containment Simulator
 
-A stochastic, grid-based simulation exploring how firebreak width and wind conditions affect the probability of containing a spreading wildfire.
+A stochastic grid simulation of wildfire spread that estimates how likely a firebreak is to stop a fire, for different firebreak widths and wind conditions.
 
 **[Live demo](https://ManithMss.github.io/wildfire-firebreak-simulator/)** · [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ManithMss/wildfire-firebreak-simulator/blob/main/notebook/wildfire-firebreak-simulator.ipynb)
 
@@ -8,13 +8,13 @@ A stochastic, grid-based simulation exploring how firebreak width and wind condi
 
 ## The problem
 
-Firebreaks, cleared strips of land with no vegetation, are used to stop wildfires from spreading, but how wide a firebreak needs to be depends heavily on wind: strong wind can push flames further and carry burning embers across a strip that would otherwise stop the fire. This project simulates wildfire spread across a grid as a stochastic process, with a firebreak of adjustable width, to answer: how does firebreak width affect the probability of containing a fire under different wind strengths and directions, once the chance of embers jumping the firebreak is included?
+A firebreak is a strip of land cleared of vegetation so that a wildfire has nothing to burn when it reaches it. How wide it needs to be depends a lot on the wind: wind pushes the fire forward and can carry burning embers over a strip that would otherwise stop it. This project simulates a fire spreading across a grid with a firebreak of adjustable width and asks: how does firebreak width affect the probability of containing the fire under different wind strengths and directions, when embers can jump the firebreak?
 
-This matters for anyone planning land management or fire-protection strips: a firebreak that is adequate in calm conditions may fail completely once wind blows directly toward it, and this project gives a quantitative way to see how much wider a firebreak needs to be as wind conditions worsen.
+This is useful for anyone planning fire protection strips. A firebreak that works on a calm day can fail when the wind blows straight at it, and the simulation shows how much wider it needs to be as conditions get worse.
 
 ## Quick start
 
-**Notebook:** click the *Open in Colab* badge above, then *Runtime -> Run all*. Everything installs and runs in about 3 minutes on a free runtime.
+**Notebook:** click the *Open in Colab* badge above, then *Runtime -> Run all*. It needs no extra installs and took about 3 minutes to run end to end on a laptop CPU (a free Colab runtime may take a few minutes longer).
 
 **Web demo:** open the [live demo](https://ManithMss.github.io/wildfire-firebreak-simulator/), or download this repository and double-click `docs/index.html`.
 
@@ -27,40 +27,41 @@ jupyter notebook notebook/wildfire-firebreak-simulator.ipynb
 
 ## Using the demo
 
-Adjust the firebreak width, wind strength and wind direction, then press Start to watch one fire spread live on the grid, colour-coded by state. Press "Run Monte Carlo estimate" to run many quick simulations in the background and get the probability that the fire is contained, with a 95% confidence interval. Full guide: [USER_GUIDE.md](USER_GUIDE.md).
+Set the firebreak width, wind strength and wind direction, then press Start to watch one fire spread on the grid. The quick scenario buttons (Calm day, Headfire, Crosswind, Wide firebreak) load a setting and start it. Press "Run Monte Carlo estimate" to run many fast simulations and get the probability that the fire is contained, with a 95% confidence interval; each result is added to a history table so settings can be compared. Full guide: [USER_GUIDE.md](USER_GUIDE.md).
 
 ## Model and mathematics
 
-The forest is a grid of cells (unburned, burning, burned, or firebreak); the grid configuration evolves as a discrete-time Markov chain, with each unburned cell igniting with a wind-weighted probability based on its burning neighbours:
+Each cell is unburned, burning, burned or firebreak. The grid changes as a discrete-time Markov chain: an unburned cell catches fire with a probability that depends on how many neighbours are burning, weighted by the wind direction,
 
 $$ p(i,j,t) = 1 - (1 - p_0)^{\,w(i,j,t)} $$
 
-Containment probability is estimated by Monte Carlo simulation over many independent replications, with 95% confidence intervals from the law of large numbers. Full derivations, assumptions and parameters: [THEORY.md](THEORY.md).
+and burning cells can occasionally throw an ember 1 to 3 cells downwind. The containment probability is estimated by Monte Carlo simulation over many independent runs, with a 95% confidence interval. Full equations, assumptions and parameters: [THEORY.md](THEORY.md).
 
 ## Verification
 
-Six checks were run, each shown with an `assert` in the notebook: burned cells never re-ignite, total grid cells are conserved every step, zero ignition probability stops all spread beyond the initial cells, a full-width firebreak with no ember-spotting always contains the fire, identical seeds give identical results, and results are of the same order of magnitude at two different grid resolutions. All six checks pass.
+The notebook runs six checks, each with an `assert`: burned cells never re-ignite, the total number of cells stays the same every step, zero ignition probability stops all spread, a full-width firebreak with no ember spotting always contains the fire, and the same seed always gives the same result. A sixth check compares two grid sizes and shows that the exact probability depends on grid resolution, so the reported values are specific to the 50x50 grid. As a second, independent check of the Monte Carlo estimator, the spread of repeated estimates falls with the number of runs N with a log-log slope of -0.47, close to the expected -0.5 (plot below).
 
-![Verification plot](figures/verification.png)
+![Monte Carlo error scaling plot](figures/verification.png)
 
 ## Concepts applied
 
-This project applies discrete-time Markov chains to model the grid's stochastic state transitions, input modelling and random variate generation for ignition and ember-spotting events, and Monte Carlo simulation with confidence intervals based on the law of large numbers to estimate containment probability and quantify its uncertainty.
+This project applies discrete-time Markov chains to model the stochastic grid updates, random variate generation for ignition and ember events, and Monte Carlo simulation with confidence intervals based on the law of large numbers to estimate the containment probability and its uncertainty. The estimator is checked with limiting cases, a conservation check and a measured 1/sqrt(N) error scaling.
 
 ## Results
 
-Containment probability rises sharply with firebreak width, from close to 0% with no firebreak to 100% at a width of 3 to 4 cells. Wind direction matters more than wind strength alone: a firebreak at width 1 contains the fire in 100% of runs when wind blows away from or parallel to it, but only around 9% of runs when wind blows directly toward it (a headfire scenario). A firebreak of at least 3 cells is needed to reach 90% or higher containment once any appreciable wind is present.
+Containment probability rises quickly with firebreak width, from 1% to 9% with no firebreak to 100% at a width of 3 cells, which is the length of the longest ember jump. Wind direction matters more than wind strength on its own: at width 1, the fire was contained in 100% of runs when the wind blew away from or along the firebreak, but in only about 9% of runs when it blew straight at it. Most of the drop happens as soon as there is any wind, because that is when ember spotting switches on; after that, stronger wind changes the result only a little. Once there is any wind toward the firebreak, a width of at least 3 cells is needed for 90% containment. Making the fuel patchy instead of uniform also changes the result (0.38 vs 0.27 at width 1), so fuel layout matters too.
 
 ## Limitations and future work
 
-- Vegetation density, slope and fuel moisture are not modelled; the grid is uniform except for the firebreak itself.
-- Ember spotting uses a simplified random-jump rule rather than a physically derived ember-transport model; a distance-decaying, wind-calibrated spotting model would be a natural extension.
-- Wind is constant within a run; a time-varying wind field would better represent a real, multi-hour wildfire.
+- Slope and fuel moisture are not modelled, and the main experiments use uniform fuel.
+- Ember spotting is a simple random jump with a fixed probability; making its probability and distance grow with wind strength would be the most useful improvement.
+- Wind is constant during a run, while real wind changes over the course of a large fire.
+- The probabilities depend on grid resolution; a full convergence study over several grid sizes would be the next step.
 
 ## Key references
 
 1. A. L. Sullivan, "Wildland surface fire spread modelling, 1990-2007. 1: Physical and quasi-physical models," *International Journal of Wildland Fire*, vol. 18, no. 4, pp. 349-368, 2009, doi: 10.1071/WF06143.
-2. A. M. G. Alexandridis et al., "A cellular automata model for forest fire spread prediction," *Applied Mathematics and Computation*, vol. 204, no. 1, pp. 191-201, 2008, doi: 10.1016/j.amc.2008.06.046.
+2. A. Alexandridis, D. Vakalis, C. I. Siettos, and G. V. Bafas, "A cellular automata model for forest fire spread prediction: The case of the wildfire that swept through Spetses Island in 1990," *Applied Mathematics and Computation*, vol. 204, no. 1, pp. 191-201, 2008, doi: 10.1016/j.amc.2008.06.046.
 
 Full list: [REFERENCES.md](REFERENCES.md).
 
@@ -70,4 +71,4 @@ Developed with the help of AI coding and writing assistants. All code was review
 
 ## Licence and credits
 
-Code: [MIT](LICENSE). Data: [source, licence, e.g. "Weather data: Open-Meteo, CC BY 4.0"].
+Code: [MIT](LICENSE). Data: no external data is used; all model parameters are synthetic (see [data/README.md](data/README.md)).
