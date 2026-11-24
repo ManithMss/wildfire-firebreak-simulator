@@ -36,7 +36,7 @@ The page has three panels: the scenario controls on the left, the live fire grid
 
 ## Check against the notebook
 
-With the default settings (width 2, wind strength 0.5, East, seed 42, 50 runs) the demo gives **0.700 +/- 0.127**. Because the seed is fixed, this number is the same every time. It is the same order as the notebook's result for width 2 in Experiment 1, but not identical, because the notebook and the browser use different random number generators and a slightly different grid size.
+With the default settings (width 2, wind strength 0.5, East, seed 1, 50 runs) the demo gives **0.360 +/- 0.133**. Because the seed is fixed, this number is the same every time. It is close to the notebook's result for width 2 in Experiment 1, but not identical, because the notebook and the browser use different random number generators and the notebook averages over 150 runs rather than 50.
 
 ## Limitations
 

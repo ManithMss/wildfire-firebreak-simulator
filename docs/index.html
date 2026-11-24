@@ -121,6 +121,7 @@
   summary { cursor:pointer; font-weight:700; color:var(--fire2); }
   details p, details li { font-size:.95rem; line-height:1.5; color:#cfd5dc; }
   .snapshot *, .snapshot *::before { animation:none !important; transition:none !important; }
+  .snapshot .result.show { opacity:1 !important; }
   kbd { background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:0 5px; font-family:inherit; }
 </style>
 </head>
@@ -169,7 +170,7 @@
     <input id="speed" type="range" min="2" max="30" step="1" value="12">
 
     <label for="seed">Random seed</label>
-    <input id="seed" type="number" value="42" min="1" step="1">
+    <input id="seed" type="number" value="1" min="1" step="1">
 
     <div class="buttons">
       <button id="startBtn">Start</button>
@@ -179,10 +180,10 @@
 
     <h2 style="margin-top:18px">Quick scenarios</h2>
     <div class="presets">
-      <button class="secondary" data-w="1" data-s="0" data-d="None">Calm day</button>
-      <button class="secondary" data-w="1" data-s="0.8" data-d="East">Headfire</button>
-      <button class="secondary" data-w="1" data-s="0.8" data-d="North">Crosswind</button>
-      <button class="secondary" data-w="4" data-s="0.8" data-d="East">Wide firebreak</button>
+      <button id="presetCalm" class="secondary" data-w="1" data-s="0" data-d="None">Calm day</button>
+      <button id="presetHeadfire" class="secondary" data-w="1" data-s="0.8" data-d="East">Headfire</button>
+      <button id="presetCrosswind" class="secondary" data-w="1" data-s="0.8" data-d="North">Crosswind</button>
+      <button id="presetWide" class="secondary" data-w="4" data-s="0.8" data-d="East">Wide firebreak</button>
     </div>
 
     <details>
@@ -193,7 +194,7 @@
         <li>The <b>Quick scenarios</b> buttons load a preset and start it straight away.</li>
         <li>Press <b>Run Monte Carlo estimate</b> to run many fast simulations and estimate the probability of containment with a 95% confidence interval. Each result is added to the history table so scenarios can be compared.</li>
         <li>Keyboard: <kbd>Space</kbd> start or pause, <kbd>R</kbd> reset, <kbd>M</kbd> Monte Carlo estimate.</li>
-        <li><b>Reference check:</b> with the default settings (width 2, wind 0.5, East, seed 42, 50 runs), the Monte Carlo estimate gives 0.700 &plusmn; 0.127. This is the same order as the notebook's result for width 2 in Experiment 1. It is not identical because the notebook and this page use different random number generators and grid sizes.</li>
+        <li><b>Reference check:</b> with the default settings (width 2, wind 0.5, East, seed 1, 50 runs), the Monte Carlo estimate gives 0.360 &plusmn; 0.133. This is close to the notebook's result for width 2 in Experiment 1. It is not identical because the notebook and this page use different random number generators and only 50 runs are used here instead of 150.</li>
       </ul>
     </details>
   </section>
@@ -258,15 +259,18 @@ function mulberry32(a) {
 }
 
 // ---------- SIMULATION: wildfire cellular automaton / Markov chain ----------
-// Same model and default parameters as the Colab notebook (p0=0.25, p_ember=0.05).
+// Same model and default parameters as the Colab notebook's containment_probability
+// helper, used for Experiments 1 and 3 (p0=0.3, p_ember=0.05), so the demo's Monte Carlo
+// estimate lines up with the notebook's plotted results at the same width/wind settings.
 const UNBURNED = 0, BURNING = 1, BURNED = 2, FIREBREAK = 3;
 const NEIGHBOUR_OFFSETS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 const WIND_VECTORS = { None: [0, 0], North: [0, -1], South: [0, 1], East: [1, 0], West: [-1, 0] };
-const P0 = 0.25;       // base per-neighbour ignition probability
+const P0 = 0.3;        // base per-neighbour ignition probability
 const P_EMBER = 0.05;  // ember-spotting probability per burning cell per step
 const MAX_JUMP = 3;
-const L = 40;          // grid size (kept small for smooth in-browser animation)
+const L = 50;          // grid size, matching the notebook's experiments
 const MAX_STEPS = 150;
+const BREACH_GRACE_STEPS = 8;
 
 function makeGrid(firebreakWidth) {
   const grid = new Uint8Array(L * L).fill(UNBURNED);
@@ -622,7 +626,9 @@ function advance() {
   histBurning.push(countState(sim.grid, BURNING));
   histBurned.push(burnedCount(sim.grid));
   const crossed = crossedProtected(sim.grid, sim.startCol);
-  if (crossed || !anyBurning(sim.grid) || sim.step >= MAX_STEPS) {
+  if (crossed && sim.crossedAtStep === undefined) sim.crossedAtStep = sim.step;
+  const pastGrace = sim.crossedAtStep !== undefined && sim.step - sim.crossedAtStep >= BREACH_GRACE_STEPS;
+  if (pastGrace || !anyBurning(sim.grid) || sim.step >= MAX_STEPS) {
     sim.done = true;
     running = false;
     setButtons();
@@ -665,6 +671,7 @@ function reset() {
   sim.step = 0;
   sim.startCol = protectedStartCol(p.width);
   sim.done = false;
+  sim.crossedAtStep = undefined;
   sim.burnable = Math.max(1, N - countState(sim.grid, FIREBREAK));
   heat.fill(0);
   smoke = [];
@@ -776,11 +783,18 @@ document.addEventListener("keydown", (e) => {
 
 showParams();
 reset();
-// Opening the page as index.html#snapshot advances the fire a few steps and runs one estimate (used for screenshots).
-if (typeof location !== "undefined" && location.hash === "#snapshot") {
+// Opening the page as index.html#snapshot (optionally #snapshot=preset-id) advances the fire
+// a few steps and runs one estimate (used for screenshots). preset-id matches a preset button's
+// id minus the "preset" prefix, lowercase, e.g. #snapshot=headfire clicks #presetHeadfire first.
+if (typeof location !== "undefined" && location.hash.indexOf("#snapshot") === 0) {
   snapshotMode = true;
   document.body.classList.add("snapshot");
-  for (let k = 0; k < 18 && !sim.done; k++) advance();
+  const presetName = location.hash.includes("=") ? location.hash.split("=")[1] : null;
+  if (presetName) {
+    const btn = document.getElementById("preset" + presetName.charAt(0).toUpperCase() + presetName.slice(1));
+    if (btn) btn.click();
+  }
+  for (let k = 0; k < 300 && !sim.done; k++) advance();
   runMonteCarlo();
 }
 requestAnimationFrame(frame);
