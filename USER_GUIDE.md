@@ -40,6 +40,6 @@ With the default settings (width 2, wind strength 0.5, East, seed 1, 50 runs) th
 
 ## Limitations
 
-- The demo uses a 40x40 grid (the notebook mostly uses 50x50) to keep the animation smooth. The notebook's resolution check shows the probability can change noticeably with grid size, so compare trends rather than exact numbers.
+- The demo uses the same 50x50 grid and p0 = 0.3 as the notebook's experiments, but a different random number generator, so its numbers agree within the confidence intervals rather than exactly. The notebook's resolution check shows the probability depends on grid size, so the values are specific to this grid.
 - The browser estimate uses at most 100 runs, so its confidence interval is wider than the notebook's 150-run experiments.
 - Patchy fuel, slope and fuel moisture are not in the demo; only firebreak width and wind can be changed.

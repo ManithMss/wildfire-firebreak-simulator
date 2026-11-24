@@ -794,7 +794,8 @@ if (typeof location !== "undefined" && location.hash.indexOf("#snapshot") === 0)
     const btn = document.getElementById("preset" + presetName.charAt(0).toUpperCase() + presetName.slice(1));
     if (btn) btn.click();
   }
-  for (let k = 0; k < 300 && !sim.done; k++) advance();
+  const snapSteps = presetName ? 300 : 18;   // presets run to the end; plain #snapshot stops part way
+  for (let k = 0; k < snapSteps && !sim.done; k++) advance();
   runMonteCarlo();
 }
 requestAnimationFrame(frame);

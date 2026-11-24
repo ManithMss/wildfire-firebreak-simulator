@@ -44,7 +44,7 @@ where Y_r is 1 if run r was contained and 0 if not. The 95% confidence interval 
 |---|---|---|---|---|
 | L | Grid side length | cells | 50 (40 to 80 in the resolution check) | Chosen to balance detail and runtime |
 | W | Firebreak width | cells | 0 to 6 | Varied in the experiments |
-| p0 | Base ignition probability | probability | 0.3 for the grid-resolution check and Experiments 1-3 (default of `containment_probability`); 0.25 for the single example run, the error-scaling check and extensions X3/X5 | Assumed; tuned so results are not always 0% or always 100% |
+| p0 | Base ignition probability | probability | 0.3 for the grid-resolution check, Experiments 1-3 and the sensitivity sweep (default of `containment_probability`); 0.25 for the single example run, the error-scaling check and the vegetation-density extension | Assumed; tuned so results are not always 0% or always 100% |
 | s | Wind strength | 0 to 1 (no units) | 0.0 to 1.0 | Varied in the experiments |
 | p_ember | Ember spotting probability | per burning cell per step | 0.05 | Assumed; tuned together with p0 |
 | N | Monte Carlo runs per setting | count | 80 to 150 (10 to 160 in the error-scaling check) | Enough for a usable 95% CI within the runtime limit |

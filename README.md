@@ -51,6 +51,16 @@ This project applies discrete-time Markov chains to model the stochastic grid up
 
 Containment probability rises quickly with firebreak width, from 1% to 9% with no firebreak to 100% at a width of 3 cells, which is the length of the longest ember jump. Wind direction matters more than wind strength on its own: at width 1, the fire was contained in 100% of runs when the wind blew away from or along the firebreak, but in only about 9% of runs when it blew straight at it. Most of the drop happens as soon as there is any wind, because that is when ember spotting switches on; after that, stronger wind changes the result only a little. Once there is any wind toward the firebreak, a width of at least 3 cells is needed for 90% containment. Making the fuel patchy instead of uniform also changes the result (0.38 vs 0.27 at width 1), so fuel layout matters too.
 
+| Containment vs firebreak width | Containment vs wind strength | Containment vs wind direction |
+|---|---|---|
+| ![Experiment 1](figures/experiment1-width.png) | ![Experiment 2](figures/experiment2-wind-strength.png) | ![Experiment 3](figures/experiment3-wind-direction.png) |
+
+| Example final grid | Patchy vegetation density | Sensitivity and uncertainty |
+|---|---|---|
+| ![Example run](figures/example-final-grid.png) | ![Density field](figures/vegetation-density-field.png) | ![Sensitivity heatmaps](figures/sensitivity-heatmaps.png) |
+
+All plots are produced by the notebook (`notebook/wildfire-firebreak-simulator.ipynb`) with fixed seeds, so re-running it reproduces them exactly.
+
 ## Limitations and future work
 
 - Slope and fuel moisture are not modelled, and the main experiments use uniform fuel.
