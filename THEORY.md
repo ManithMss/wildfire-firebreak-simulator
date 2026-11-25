@@ -53,6 +53,12 @@ where Y_r is 1 if run r was contained and 0 if not. The 95% confidence interval 
 
 Each time step computes the new grid from a copy of the old grid, so every cell is updated from the same snapshot and the update order does not matter. Random numbers come from a seeded generator (NumPy's default generator in the notebook, the mulberry32 generator in the web demo), so any run can be repeated exactly from its seed. Grid size and time step are fixed inside each experiment. Check 6 below compares two grid sizes to see how much the grid resolution affects the answer.
 
+**Stability.** The scheme has no step-size stability limit like the CFL condition of explicit PDE solvers. The time step is the model's own unit (one step is the time a cell takes to burn out), not an approximation of a continuous equation, so there is nothing that can blow up. For any w >= 0 and 0 <= p0 < 1, the ignition probability 1 - (1 - p0)^w stays between 0 and 1. Every cell is always in one of the four states, and the total number of cells is conserved (Check 2). Every run also ends: a cell can burn only once and at least one cell burns in every step while the fire is alive, so a fire on an L x L grid goes out within L^2 steps. The `max_steps = 200` limit is only a safety cap.
+
+**Accuracy.** The main numerical error is the Monte Carlo sampling error. It shrinks like 1/sqrt(N) (measured in extension X2) and is reported as a 95% confidence interval. The other error comes from the fixed grid, which Check 6 shows does affect the probabilities, so the results apply to the 50 x 50 grid used.
+
+**Units.** The model is dimensionless: lengths are in cells (grid spacing = 1), time is in steps, and p0 and p_ember are probabilities per cell per step.
+
 ## 5. Verification
 
 | Check | Expected | Obtained | Pass? |
@@ -69,11 +75,17 @@ Each time step computes the new grid from a copy of the old grid, so every cell 
 
 ## 6. Extensions
 
-The notebook (Section 6) adds three things to the core model:
+The notebook (Section 6) adds five things to the core model:
 
 - **Monte Carlo error scaling:** the whole containment estimate was repeated 15 times at N = 10, 20, 40, 80 and 160 runs, and the spread of the repeated estimates was plotted against N on log-log axes. The fitted slope was -0.47, close to the -0.5 expected for a Monte Carlo estimator. This is a second check of the estimator that does not depend on the main experiments.
 - **Patchy vegetation density:** each cell gets a density multiplier between about 0.5 and 1.5 from a smooth random field, and p0 is multiplied by it. At width 1, wind 0.5 East, patchy fuel gave a containment probability of 0.380 +/- 0.095 against 0.270 +/- 0.087 for uniform fuel. So the uniform-fuel assumption does change the answer.
 - **Sensitivity and uncertainty:** containment probability and its 95% CI were computed for every combination of width 0 to 4 and wind strength 0.0 to 0.9 and shown as two heatmaps. The widest interval was at wind 0.3, width 2 (P = 0.500 +/- 0.110). This is what statistics predicts, since the standard error of a proportion is largest at 0.5.
+- **Performance (vectorised update step):** in `step()` the wind-weighted count w is built by looping over every burning cell and its 8 neighbours. `step_fast()` computes the same sum with array operations: for each of the 8 neighbour offsets (di, dj) the burning mask is shifted by that offset and added with its weight 1 + s max(0, d_k . u), so each step costs 8 array additions whatever the size of the fire. The random numbers are drawn in the same order as in `step()`, so the same seed must give the same grid. This is checked with `assert` on 300 random grids and on 200 full runs, all identical. On the same 100 runs it took 0.38 s instead of 1.17 s (3.1x faster) at width 1 with wind 0.6 East, and 0.31 s instead of 0.86 s (2.8x) at width 0 with no wind.
+- **Real wind data (Spetses Island):** the wind input is taken from a real, cited dataset: the daily maximum 10 m wind speed and dominant direction on Spetses Island, Greece, for every June to September day from 2015 to 2024 (1,220 days, ERA5 reanalysis via the Open-Meteo API, CC BY 4.0, see [data/README.md](data/README.md)). Each day's direction is turned into the direction the wind blows toward and rounded to N, E, S or W; speed v becomes wind strength s = min(1, v / 40 km/h), rounded to the nearest 0.2. The grid is rotated so the protected side is always "East". The containment probability is then averaged over all 1,220 days, with SE^2 = sum_k f_k^2 P_k (1 - P_k) / N, where f_k is the share of days in combination k. The summer wind blows toward the south on 48% of days, so a firebreak protecting the south side reached only 0.581 +/- 0.023 at width 1 and 0.764 +/- 0.034 at width 2, while the other three sides gave about 0.84-0.86 and 0.92. Width 3 contained every run on all sides. Using 30 or 50 km/h instead of 40 km/h moved the south-side values by less than 0.03. This grounds the inputs in real data; it does not validate the outputs, because there is no observed firebreak data to compare with.
+
+![Real wind data](figures/real-wind-spetses.png)
+
+![Performance](figures/performance.png)
 
 ## 7. Concepts applied
 
@@ -82,6 +94,7 @@ The notebook (Section 6) adds three things to the core model:
 | Discrete-time Markov chains | The grid update rule: the next grid depends only on the current grid and new random numbers |
 | Input modelling and random variate generation | Seeded uniform random numbers decide ignition and ember jumps |
 | Monte Carlo simulation and the law of large numbers | Containment probability and its 95% confidence interval from many independent runs, plus the error-scaling check |
+| Input modelling from real data | Real wind speeds and directions turned into the model's wind inputs (Section 6) |
 
 ## 8. References
 

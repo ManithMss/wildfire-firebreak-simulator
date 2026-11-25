@@ -14,7 +14,7 @@ This is useful for anyone planning fire protection strips. A firebreak that work
 
 ## Quick start
 
-**Notebook:** click the *Open in Colab* badge above, then *Runtime -> Run all*. It needs no extra installs and took about 3 minutes to run end to end on a laptop CPU (a free Colab runtime may take a few minutes longer).
+**Notebook:** click the *Open in Colab* badge above, then *Runtime -> Run all*. It needs no extra installs and took about 4 minutes to run end to end on a laptop CPU (a free Colab runtime may take a few minutes longer).
 
 **Web demo:** open the [live demo](https://ManithMss.github.io/wildfire-firebreak-simulator/), or download this repository and double-click `docs/index.html`.
 
@@ -45,11 +45,11 @@ The notebook runs six checks, each with an `assert`: burned cells never re-ignit
 
 ## Concepts applied
 
-This project applies discrete-time Markov chains to model the stochastic grid updates, random variate generation for ignition and ember events, and Monte Carlo simulation with confidence intervals based on the law of large numbers to estimate the containment probability and its uncertainty. The estimator is checked with limiting cases, a conservation check and a measured 1/sqrt(N) error scaling.
+This project applies discrete-time Markov chains to model the stochastic grid updates, random variate generation for ignition and ember events, input modelling from real weather data, and Monte Carlo simulation with confidence intervals based on the law of large numbers to estimate the containment probability and its uncertainty. The estimator is checked with limiting cases, a conservation check and a measured 1/sqrt(N) error scaling, and a vectorised version of the update step is shown to give identical results about 3 times faster.
 
 ## Results
 
-Containment probability rises quickly with firebreak width, from 1% to 9% with no firebreak to 100% at a width of 3 cells, which is the length of the longest ember jump. Wind direction matters more than wind strength on its own: at width 1, the fire was contained in 100% of runs when the wind blew away from or along the firebreak, but in only about 9% of runs when it blew straight at it. Most of the drop happens as soon as there is any wind, because that is when ember spotting switches on; after that, stronger wind changes the result only a little. Once there is any wind toward the firebreak, a width of at least 3 cells is needed for 90% containment. Making the fuel patchy instead of uniform also changes the result (0.38 vs 0.27 at width 1), so fuel layout matters too.
+Containment probability rises quickly with firebreak width, from 1% to 9% with no firebreak to 100% at a width of 3 cells, which is the length of the longest ember jump. Wind direction matters more than wind strength on its own: at width 1, the fire was contained in 100% of runs when the wind blew away from or along the firebreak, but in only about 9% of runs when it blew straight at it. Most of the drop happens as soon as there is any wind, because that is when ember spotting switches on; after that, stronger wind changes the result only a little. Once there is any wind toward the firebreak, a width of at least 3 cells is needed for 90% containment. Making the fuel patchy instead of uniform also changes the result (0.38 vs 0.27 at width 1), so fuel layout matters too. A firebreak also limits the damage: with wind 0.6 toward the firebreak, the share of the forest that burns falls from 93% with no firebreak to 71% at width 2 and 46% at width 4. With ten summers of real wind data from Spetses Island, Greece, where the wind mostly blows toward the south, a firebreak protecting the south side needs width 3, while width 2 already gives about 92% on the other sides.
 
 | Containment vs firebreak width | Containment vs wind strength | Containment vs wind direction |
 |---|---|---|
@@ -59,6 +59,10 @@ Containment probability rises quickly with firebreak width, from 1% to 9% with n
 |---|---|---|
 | ![Example run](figures/example-final-grid.png) | ![Density field](figures/vegetation-density-field.png) | ![Sensitivity heatmaps](figures/sensitivity-heatmaps.png) |
 
+| Burned area vs firebreak width | Real wind data (Spetses Island) | Vectorised step speed-up |
+|---|---|---|
+| ![Burned area](figures/burned-area.png) | ![Real wind data](figures/real-wind-spetses.png) | ![Performance](figures/performance.png) |
+
 All plots are produced by the notebook (`notebook/wildfire-firebreak-simulator.ipynb`) with fixed seeds, so re-running it reproduces them exactly.
 
 ## Limitations and future work
@@ -66,6 +70,7 @@ All plots are produced by the notebook (`notebook/wildfire-firebreak-simulator.i
 - Slope and fuel moisture are not modelled, and the main experiments use uniform fuel.
 - Ember spotting is a simple random jump with a fixed probability; making its probability and distance grow with wind strength would be the most useful improvement.
 - Wind is constant during a run, while real wind changes over the course of a large fire.
+- The real wind data sets the model's inputs, but the results are not validated against observed firebreak outcomes, and the conversion from km/h to wind strength is an assumption.
 - The probabilities depend on grid resolution; a full convergence study over several grid sizes would be the next step.
 
 ## Key references
@@ -81,4 +86,4 @@ Developed with the help of AI coding and writing assistants. All code was review
 
 ## Licence and credits
 
-Code: [MIT](LICENSE). Data: no external data is used; all model parameters are synthetic (see [data/README.md](data/README.md)).
+Code: [MIT](LICENSE). Data: wind data for Spetses Island from ERA5 via [Open-Meteo](https://open-meteo.com/) (CC BY 4.0); all other model parameters are synthetic (see [data/README.md](data/README.md)).

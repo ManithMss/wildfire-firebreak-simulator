@@ -27,6 +27,7 @@ The page has three panels: the scenario controls on the left, the live fire grid
 - **Chart:** the orange area shows how many cells are burning at each step; the grey line shows the total share of the forest burned.
 - **Wind compass:** the arrow next to the wind direction rotates to the chosen direction and grows with wind strength.
 - **P(contained) with 95% CI:** the quantitative output. Pressing "Run Monte Carlo estimate" (keyboard: M) runs many quick simulations (not animated) at the current settings and shows the estimated probability of containment on a gauge (red below 0.4, amber below 0.8, green above), with a 95% confidence interval, exactly as the notebook does. Each estimate is added to the Scenario history table so different settings can be compared side by side.
+- **Notebook reference check:** loads the Experiment 1 settings (width 2, wind 0.6 East, seed 1, 100 runs) and runs the estimate, so the demo can be compared with the notebook in one click (see below).
 
 ## Try this
 
@@ -36,7 +37,14 @@ The page has three panels: the scenario controls on the left, the live fire grid
 
 ## Check against the notebook
 
-With the default settings (width 2, wind strength 0.5, East, seed 1, 50 runs) the demo gives **0.360 +/- 0.133**. Because the seed is fixed, this number is the same every time. It is close to the notebook's result for width 2 in Experiment 1, but not identical, because the notebook and the browser use different random number generators and the notebook averages over 150 runs rather than 50.
+Click **Notebook reference check**. It sets width 2, wind strength 0.6, East, seed 1 and 100 runs, which are the Experiment 1 settings, and runs the estimate. Because the seed is fixed, the result is the same every time.
+
+| Source | Settings | Result |
+|---|---|---|
+| Web demo | width 2, wind 0.6 East, 100 runs | **0.480 +/- 0.098** |
+| Notebook, Experiment 1 | width 2, wind 0.6 East, 150 runs | **0.440 +/- 0.079** |
+
+**Tolerance:** the two results agree if their difference is smaller than the combined 95% interval, 1.96 x sqrt(SE_demo^2 + SE_notebook^2) = 0.126. The difference is 0.040, so the check passes. They are not identical because the browser uses a different random number generator (mulberry32) and fewer runs.
 
 ## Limitations
 
