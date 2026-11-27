@@ -15,7 +15,7 @@ The page has three panels: the scenario controls on the left, the live fire grid
 | Wind direction | Which way the wind blows (East blows the fire toward the firebreak) | None/North/South/East/West | East |
 | Animation speed | How many simulation steps are shown per second (visual only, does not change results) | 2-30 | 12 |
 | Monte Carlo runs | Number of independent simulations used for the containment-probability estimate | 10-100 | 50 |
-| Random seed | Fixes the pseudo-random sequence for the animated run and the Monte Carlo estimate | any positive integer | 42 |
+| Random seed | Fixes the pseudo-random sequence for the animated run and the Monte Carlo estimate | any positive integer | 1 |
 | Start / Pause | Runs or pauses the single animated simulation (keyboard: Space) | - | - |
 | Reset | Clears the run and applies the current settings (keyboard: R) | - | - |
 | Quick scenarios | Load and start a preset: Calm day, Headfire, Crosswind, Wide firebreak | - | - |
