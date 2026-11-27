@@ -194,7 +194,7 @@
         <li>The <b>Quick scenarios</b> buttons load a preset and start it straight away.</li>
         <li>Press <b>Run Monte Carlo estimate</b> to run many fast simulations and estimate the probability of containment with a 95% confidence interval. Each result is added to the history table so scenarios can be compared.</li>
         <li>Keyboard: <kbd>Space</kbd> start or pause, <kbd>R</kbd> reset, <kbd>M</kbd> Monte Carlo estimate.</li>
-        <li><b>Reference check:</b> press <b>Notebook reference check</b> (width 2, wind 0.6, East, seed 1, 100 runs). The page gives 0.480 &plusmn; 0.098. The notebook's Experiment 1 gives 0.440 &plusmn; 0.079 for the same settings with 150 runs. <b>Tolerance:</b> the two agree if their difference is smaller than the combined 95% interval, 1.96 &times; &radic;(SE<sub>page</sub>&sup2; + SE<sub>notebook</sub>&sup2;) = 0.126. The difference is 0.040, so the check passes. The values are not identical because the page uses a different random number generator (mulberry32) and fewer runs.</li>
+        <li><b>Reference check:</b> press <b>Notebook reference check</b> (width 2, wind 0.6, East, seed 1, 150 runs &mdash; matching the notebook's Experiment 1 run count). The notebook's Experiment 1 gives 0.440 &plusmn; 0.079 for the same settings. <b>Tolerance:</b> the two agree if their difference is smaller than the combined 95% interval, 1.96 &times; &radic;(SE<sub>page</sub>&sup2; + SE<sub>notebook</sub>&sup2;). With matched run counts the page's CI should be close in width to the notebook's; any remaining gap in the point estimate comes from using a different random number generator (mulberry32 in the page vs. numpy in the notebook), not from sample size.</li>
       </ul>
     </details>
   </section>
@@ -236,9 +236,9 @@
     <div class="progress" id="mcProg"><i></i></div>
 
     <label for="runs">Monte Carlo runs <span class="val" id="runsVal"></span></label>
-    <input id="runs" type="range" min="10" max="100" step="10" value="50">
+    <input id="runs" type="range" min="10" max="150" step="10" value="50">
     <div class="buttons"><button id="mcBtn">Run Monte Carlo estimate</button></div>
-    <div class="buttons"><button id="refBtn" class="secondary" title="Width 2, wind 0.6 East, seed 1, 100 runs">Notebook reference check</button></div>
+    <div class="buttons"><button id="refBtn" class="secondary" title="Width 2, wind 0.6 East, seed 1, 150 runs">Notebook reference check</button></div>
 
     <h2 style="margin-top:18px">Scenario history</h2>
     <table>
@@ -774,10 +774,10 @@ document.querySelectorAll(".presets button").forEach((b) => b.addEventListener("
   reset();
   start();
 }));
-// Notebook reference check: same settings as Experiment 1 at width 2 (wind 0.6 East), 100 runs
+// Notebook reference check: same settings as Experiment 1 at width 2 (wind 0.6 East), 150 runs
 $("refBtn").addEventListener("click", () => {
   $("width").value = 2; $("windStrength").value = 0.6; $("windDir").value = "East";
-  $("seed").value = 1; $("runs").value = 100;
+  $("seed").value = 1; $("runs").value = 150;
   showParams();
   reset();
   runMonteCarlo();
